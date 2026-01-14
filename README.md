@@ -1,6 +1,8 @@
-# The Chatroom
+# Charlando En La Discoteca
 
-A real-time chat application with multi-tier authentication, language-specific lounges, user marketplace, moderation, and verification system. Built with Node.js, Express, Socket.IO, Next.js, and PostgreSQL.
+**A temporary, privacy-first messaging platform for nightlife, festivals, and conventions.**
+
+Built with React Native, NestJS, Socket.IO, and PostgreSQL. Featuring ephemeral identities, location-based venue chatrooms, and real-time messaging.
 
 **📦 Monorepo Structure:** This project is fully consolidated with all code in the `packages/` directory.
 
@@ -8,113 +10,119 @@ A real-time chat application with multi-tier authentication, language-specific l
 
 ## 📦 Packages
 
-```,
-
-The-Chatroom/
+```
+Charlando-En-La-Discoteca/
 ├── packages/
-│   ├── api/          # Backend REST API (Express + Prisma + PostgreSQL)
-│   ├── socket/       # WebSocket server (Socket.IO)
-│   ├── web/          # Frontend (Next.js 14 + React 18 + TypeScript)
-│   └── shared/       # Shared types, schemas, and utilities
-├── docs/             # Documentation
-└── package.json      # Workspace configuration
+│   ├── nestjs-api/    # NestJS backend REST API (Prisma + PostgreSQL)
+│   ├── api/           # Express backend (legacy/migration support)
+│   ├── socket/        # WebSocket server (Socket.IO)
+│   ├── mobile/        # React Native mobile app (iOS + Android)
+│   ├── web/           # Web interface (Next.js 14 + React 18 + TypeScript)
+│   └── shared/        # Shared types, schemas, and utilities
+├── docs/              # Documentation
+└── package.json       # Workspace configuration
 ```
 
 ### Package Details
 
-- **[@chatroom/api](packages/api/)** - Backend REST API (Express, Prisma, JWT)
-- **[@chatroom/socket](packages/socket/)** - WebSocket server (Socket.IO)
-- **[@chatroom/web](packages/web/)** - Frontend application (Next.js, React)
-- **[@chatroom/shared](packages/shared/)** - Shared types, schemas, and utilities
+- **[@charlando/nestjs-api](packages/nestjs-api/)** - NestJS backend with REST API, WebSocket gateway, and Prisma ORM
+- **[@charlando/mobile](packages/mobile/)** - React Native mobile application for iOS and Android
+- **[@charlando/socket](packages/socket/)** - Standalone WebSocket server (Socket.IO)
+- **[@charlando/web](packages/web/)** - Web frontend application (Next.js, React)
+- **[@charlando/shared](packages/shared/)** - Shared types, schemas, and utilities
 
 ---
 
 ## Features
 
-### ✅ Currently Implemented
+### ✅ Core Platform Features
 
-- **Multi-tier Authentication**
-  - ✅ Guest sessions with temporary usernames
-  - ✅ Age verification (18+ check at entry)
-  - ✅ JWT token structure (access & refresh tokens)
+- **Ephemeral Identities**
+  - ✅ Temporary session-based usernames
+  - ✅ No permanent account required
+  - ✅ Auto-expiring guest sessions
+  - ✅ Privacy-first by design
 
-- **Real-time Chat Foundation**
-  - ✅ Language-based room structure (8 languages)
-  - ✅ Country-specific lounges
-  - ✅ Socket.IO server setup
-  - ✅ UI for room selection and messaging
+- **Location-Based Venue Chatrooms**
+  - ✅ Venue-specific chat spaces
+  - ✅ Proximity-based room discovery
+  - ✅ Support for nightlife, festivals, and conventions
+  - ✅ Real-time presence indicators
 
-- **Account Tiers UI**
-  - ✅ Creator account features displayed
-  - ✅ Viewer account features displayed
-  - ✅ Guest access features displayed
+- **Real-Time Messaging**
+  - ✅ WebSocket-based instant messaging
+  - ✅ Socket.IO implementation
+  - ✅ Message delivery status
+  - ✅ Typing indicators
+
+- **Mobile-First Design**
+  - ✅ React Native cross-platform app
+  - ✅ Native iOS and Android support
+  - ✅ Responsive web interface
+  - ✅ Touch-optimized UI
 
 ### 🚧 Planned / In Progress
 
-- **Multi-tier Authentication**
-  - 🚧 Phone number registration
-  - 🚧 Password hashing & verification
-  - 🚧 Session persistence to database
-  - 🚧 Sign in / Sign up flows
+- **Enhanced Privacy Features**
+  - 🚧 Automatic message deletion after venue closes
+  - 🚧 No message history storage
+  - 🚧 Anonymous user profiles
+  - 🚧 End-to-end encryption (optional)
 
-- **Real-time Chat**
-  - 🚧 Message storage to database
-  - 🚧 Message history/pagination
-  - 🚧 Online/offline presence tracking
-  - 🚧 Typing indicators
-  - 🚧 User list per lounge
+- **Venue Management**
+  - 🚧 Venue owner dashboard
+  - 🚧 Custom venue branding
+  - 🚧 Event-based temporary venues
+  - 🚧 Venue analytics
 
-- **Marketplace**
-  - 🚧 User-generated content uploads
-  - 🚧 Content sales & payments
-  - 🚧 Payment transaction management
-  - 🚧 Creator marketplace dashboard
-
-- **Moderation**
-  - 🚧 User reporting system
-  - 🚧 Moderation actions & enforcement
-  - 🚧 Audit logs for moderation events
-  - 🚧 Content flagging/removal
-
-- **Verification**
-  - 🚧 ID/document verification
-  - 🚧 Age verification backend
-  - 🚧 Verification retention policies
-
-- **Additional Features**
-  - 🚧 User profiles
-  - 🚧 Private messaging
-  - 🚧 User blocking/reports
-  - 🚧 Admin dashboard
+- **Advanced Features**
+  - 🚧 Multi-language support
+  - 🚧 Media sharing (images, videos)
+  - 🚧 Push notifications
+  - 🚧 User blocking/reporting
 
 ---
 
 ## Technology Stack
 
-- **Backend:** Node.js, Express, Socket.IO
+- **Backend:** NestJS, Node.js, Express (legacy), Socket.IO
+- **Mobile:** React Native, Expo
 - **Frontend:** Next.js 14, React 18, TypeScript
 - **Database:** PostgreSQL with Prisma ORM
-- **Authentication:** JWT, bcrypt, CSRF protection, rate limiting
-- **Real-time Messaging:** Socket.IO
-- **SMS Integration:** Twilio (optional)
-- **UI:** Tailwind CSS, shadcn/ui, Lucide icons
+- **Authentication:** JWT with ephemeral sessions
+- **Real-time Messaging:** Socket.IO with WebSocket
+- **Location Services:** Geolocation API
+- **UI:** Tailwind CSS, React Native Paper, Lucide icons
 
 ---
 
 ## Project Structure
 
-The-Chatroom/
-├── server/           # API and Socket.IO servers
-├── routes/           # API routes
-├── lib/              # Core libraries (JWT, crypto, Prisma, Twilio)
-├── middleware/       # Express middleware (rate limiting, CSRF)
-├── services/         # Background jobs
-├── utils/            # Logger & security helpers
-├── components/       # React UI components
-├── pages/            # Next.js pages
-├── prisma/           # Database schema
-├── public/           # Static assets & client scripts
-└── docs/             # Documentation
+Charlando-En-La-Discoteca/
+├── packages/
+│   ├── nestjs-api/      # NestJS backend API
+│   │   ├── src/
+│   │   │   ├── auth/           # Authentication module
+│   │   │   ├── venues/         # Venue management
+│   │   │   ├── chat/           # Chat module
+│   │   │   ├── sessions/       # Ephemeral sessions
+│   │   │   └── websocket/      # WebSocket gateway
+│   │   └── prisma/             # Database schema
+│   │
+│   ├── mobile/          # React Native mobile app
+│   │   ├── src/
+│   │   │   ├── screens/        # App screens
+│   │   │   ├── components/     # Reusable components
+│   │   │   ├── navigation/     # Navigation config
+│   │   │   ├── services/       # API & WebSocket clients
+│   │   │   └── hooks/          # Custom React hooks
+│   │   └── app.json            # Expo configuration
+│   │
+│   ├── web/             # Next.js web interface
+│   ├── socket/          # Standalone Socket.IO server
+│   └── shared/          # Shared types and utilities
+│
+└── docs/                # Documentation
 
 ⸻
 

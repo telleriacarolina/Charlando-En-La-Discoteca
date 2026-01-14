@@ -1,7 +1,8 @@
 {
-  "name": "@chatroom/web",
+  "name": "@charlando/web",
   "version": "0.1.0",
   "private": true,
+  "description": "Next.js web frontend for Charlando En La Discoteca",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@chatroom/shared": "*",
+    "@charlando/shared": "*",
     "clsx": "^2.0.0",
     "lucide-react": "^0.264.0",
     "next": "^14.0.0",

@@ -1,7 +1,8 @@
 {
-  "name": "@chatroom/api",
+  "name": "@charlando/api",
   "version": "0.1.0",
   "private": true,
+  "description": "Express backend API (legacy/migration support)",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -22,7 +23,7 @@
     "twilio": "^4.18.0",
     "prisma": "^5.11.0",
     "@prisma/client": "^5.11.0",
-    "@chatroom/shared": "*"
+    "@charlando/shared": "*"
   },
   "devDependencies": {
     "nodemon": "^3.0.0",
