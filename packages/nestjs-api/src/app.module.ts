@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { VenuesModule } from './venues/venues.module';
 import { ChatModule } from './chat/chat.module';
@@ -13,6 +14,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     VenuesModule,
