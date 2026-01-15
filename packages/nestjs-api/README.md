@@ -412,27 +412,24 @@ MESSAGE_EXPIRY_HOURS=24
 ## Privacy Features
 
 ### Ephemeral Sessions
-
 - Sessions automatically expire after 24 hours
 - No permanent user accounts required
 - Temporary usernames generated for each session
 
 ### Message Privacy
-
 - Messages are automatically deleted after 24 hours
 - Only recent messages (last 2 hours) are accessible
 - No message history or archives
 - Messages deleted when venue closes
 
 ### Data Minimization
-
 - No personal information stored
 - No IP address retention
 - No message metadata beyond essentials
 
-### Testing
+## Development
 
-#### Running Tests
+### Running Tests
 
 ```bash
 # Unit tests
@@ -468,18 +465,3 @@ See the main [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 ## License
 
 MIT License - See [LICENSE](../../LICENSE) for details.
-
-### Technical Details
-
-```typescript
-// Session Creation
-POST /auth/ephemeral
-Response: {
-  sessionId: "uuid",
-  username: "guest_abc123",
-  token: "jwt-token",
-  expiresAt: "2024-01-15T12:00:00Z"
-}
-```
-
-#### Privacy Benefits

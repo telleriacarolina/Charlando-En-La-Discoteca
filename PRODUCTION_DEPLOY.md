@@ -346,7 +346,6 @@ curl https://api.charlando.app/health
 ```
 
 ### WebSocket Test
-
 ```javascript
 // Browser console
 const socket = io('https://api.charlando.app', {
@@ -356,7 +355,6 @@ socket.on('connect', () => console.log('Connected!'));
 ```
 
 ### Mobile App Test
-
 - Install from TestFlight (iOS) or Internal Testing (Android)
 - Create ephemeral session
 - Join a venue
@@ -409,14 +407,13 @@ Sentry.init({
 For multiple API instances:
 
 1. **Use Redis for Socket.IO adapter**
-
 ```typescript
 import { RedisIoAdapter } from './redis-io.adapter';
 
 app.useWebSocketAdapter(new RedisIoAdapter(app));
 ```
 
-1. **Load Balancer Configuration**
+2. **Load Balancer Configuration**
    - Enable sticky sessions for WebSocket
    - Health check endpoint: `/health`
    - WebSocket path: `/socket.io/`
@@ -468,7 +465,6 @@ find /backups -mtime +7 -delete
 ## Cost Estimation
 
 ### Small Deployment (0-1000 users)
-
 - **DigitalOcean**: $20/month
 - **Domain**: $12/year
 - **Apple Developer**: $99/year
@@ -476,7 +472,6 @@ find /backups -mtime +7 -delete
 - **Total First Year**: ~$380
 
 ### Medium Deployment (1000-10000 users)
-
 - **AWS/GCP**: $50-100/month
 - **Database**: $30/month
 - **CDN**: $10/month

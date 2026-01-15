@@ -1,5 +1,8 @@
 # Charlando En La Discoteca - Platform Features
 
+**Version:** 0.1.0 (Early Stage)  
+**Last Updated:** January 2026
+
 ## Overview
 
 Charlando En La Discoteca is a privacy-first, temporary messaging platform designed for nightlife venues, music festivals, and conventions. The platform emphasizes ephemeral communication with auto-expiring sessions and messages.
@@ -12,397 +15,305 @@ Charlando En La Discoteca is a privacy-first, temporary messaging platform desig
 4. **Real-Time**: Instant messaging with WebSocket technology
 5. **Cross-Platform**: Mobile-first with web support
 
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Client Applications                       │
+├──────────────────────┬──────────────────────────────────────┤
+│  Mobile (iOS/Android)│         Web (Next.js)                │
+│  React Native + Expo │      React 18 + Tailwind CSS         │
+└──────────┬───────────┴──────────────┬───────────────────────┘
+           │                          │
+           └────────┬─────────────────┘
+                    │ REST + WebSocket
+           ┌────────▼─────────────────┐
+           │      NestJS API Server   │
+           │   (TypeScript Backend)   │
+           ├──────────────────────────┤
+           │ • Auth Module (JWT)      │
+           │ • Venues Module          │
+           │ • Chat Module            │
+           │ • WebSocket Gateway      │
+           │ • Sessions Cron Jobs     │
+           └────────┬─────────────────┘
+                    │ Prisma ORM
+           ┌────────▼─────────────────┐
+           │   PostgreSQL Database    │
+           │    (Primary Storage)     │
+           └──────────────────────────┘
+
+Optional/Planned Dependencies:
+  • Redis - Session caching & Socket.IO adapter (multi-server)
+  • Bull Queue - Background job processing
+  • Sentry - Error tracking & monitoring
+  • CDN - Static asset delivery
+```
+
+### Key Dependencies
+- **PostgreSQL 14+**: Primary data store with auto-delete triggers
+- **Prisma ORM**: Type-safe database access and migrations
+- **Socket.IO**: WebSocket communication for real-time features
+- **Redis** (planned): Caching layer and Socket.IO clustering
+- **Bull/RabbitMQ** (planned): Message queue for background jobs
+
+## Data Retention Policy
+
+### Explicit Retention Timelines
+
+| Data Type | Visibility Window | Hard Delete After | Cleanup Method |
+|-----------|------------------|-------------------|----------------|
+| **Sessions** | 24 hours | 24 hours | Hourly cron job |
+| **Messages** | 2 hours (API) | 24 hours | Daily cron job |
+| **Venue Data** | Always visible | Never (core data) | Manual admin |
+| **IP Addresses** | Session creation only | With session (24h) | Cascade delete |
+| **WebSocket Connections** | Real-time only | On disconnect | In-memory cleanup |
+
+### Automated Deletion Process
+
+```typescript
+// Hourly Session Cleanup (via @nestjs/schedule)
+@Cron(CronExpression.EVERY_HOUR)
+async cleanupExpiredSessions() {
+  // Delete sessions where expiresAt < now OR inactive > 24h
+  await prisma.tempSession.deleteMany({
+    where: {
+      OR: [
+        { expiresAt: { lt: new Date() } },
+        { isActive: false, lastActivityAt: { lt: yesterday } }
+      ]
+    }
+  });
+}
+
+// Daily Message Cleanup
+@Cron(CronExpression.EVERY_DAY_AT_3AM)
+async cleanupOldMessages() {
+  // Delete messages older than 24 hours
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  await prisma.chatMessage.deleteMany({
+    where: { createdAt: { lt: cutoff } }
+  });
+}
+```
+
 ## Feature Breakdown
 
 ### 1. Ephemeral Identity System
 
-#### Implementation Details
+**Current Implementation:**
+- ✅ Anonymous sessions with auto-generated usernames (`guest_abc123`)
+- ✅ 24-hour session lifetime with JWT authentication
+- ✅ Automated hourly cleanup of expired sessions
+- ✅ No email, password, or personal data required
 
-- ✅ **Anonymous Sessions**: Users connect without creating accounts
-- ✅ **Temporary Usernames**: Auto-generated usernames (e.g., `guest_abc123`)
-- ✅ **Auto-Expiring Sessions**: 24-hour session lifetime
-- ✅ **JWT Authentication**: Secure, stateless authentication
-- ✅ **Session Cleanup**: Automated removal of expired sessions
-
-#### Technical Details: Ephemeral Identity
-
+**API Example:**
 ```typescript
-// Session Creation
 POST /auth/ephemeral
-Response: {
-  sessionId: "uuid",
-  username: "guest_abc123",
-  token: "jwt-token",
-  expiresAt: "2024-01-15T12:00:00Z"
-}
+→ { sessionId: "uuid", username: "guest_abc123", token: "jwt", expiresAt: "2024-01-15T12:00:00Z" }
 ```
 
-#### Privacy Benefits
+**Planned:** End-to-end encryption, self-destructing messages
 
-- No email or phone required
-- No password storage
-- No tracking across sessions
-- Automatic identity reset
+---
 
 ### 2. Location-Based Venue Discovery
 
-#### Location Implementation
+**Current Implementation:**
+- ✅ Geolocation API with customizable radius (default 5km)
+- ✅ Venue types: nightclub, festival, convention, bar, other
+- ✅ Real-time active user counts per venue
 
-- ✅ **Geolocation API**: Find venues near user's location
-- ✅ **Radius Search**: Customizable search radius (default 5km)
-- ✅ **Venue Types**: Nightclub, festival, convention, bar, other
-- ✅ **Real-Time Active Users**: See current venue population
-
-### Technical Details: Venue Discovery
-
+**API Example:**
 ```typescript
-// Venue Discovery Example
 GET /venues/nearby?lat=40.7128&lng=-74.0060&radius=5
-Response: [
-  {
-    id: "venue-id",
-    name: "The Electric Lounge",
-    type: "nightclub",
-    latitude: 40.7130,
-    longitude: -74.0055,
-    distance: 0.3, // km
-    activeUsers: 42,
-    isActive: true
-  }
-]
+→ [{ id, name, type, latitude, longitude, distance: 0.3, activeUsers: 42, isActive: true }]
 ```
 
-#### Upcoming Enhancements
+**Planned:** PostGIS integration, venue hours/schedule, event-based temporary venues
 
-- 🚧 PostGIS integration for efficient geo-queries
-- 🚧 Venue hours/schedule
-- 🚧 Event-based temporary venues
-- 🚧 Venue capacity limits
+---
 
 ### 3. Real-Time Chat System
 
-#### Mobile App Implementation
+**Current Implementation:**
+- ✅ Socket.IO WebSocket gateway with venue-based rooms
+- ✅ Message broadcasting, typing indicators, user presence
+- ✅ Message constraints: 500 char max, text-only (no attachments)
 
-- ✅ **WebSocket Gateway**: Socket.IO for instant messaging
-- ✅ **Venue-Based Rooms**: Separate chat per venue
-- ✅ **Message Broadcasting**: Instant delivery to all users in venue
-- ✅ **Typing Indicators**: Real-time typing status
-- ✅ **User Presence**: Join/leave notifications
-
-#### Technical Details
-
+**WebSocket Events:**
 ```typescript
-// WebSocket Events
-socket.emit('join_venue', { venueId: 'venue-123' });
-socket.emit('send_message', { venueId: 'venue-123', content: 'Hello!' });
-socket.emit('typing', { venueId: 'venue-123', isTyping: true });
+// Client → Server
+socket.emit('join_venue', { venueId });
+socket.emit('send_message', { venueId, content });
+socket.emit('typing', { venueId, isTyping });
 
-// Server Broadcasts
+// Server → Client
 socket.on('new_message', { id, content, username, createdAt });
 socket.on('user_joined', { username, activeUsers });
 socket.on('user_typing', { username, isTyping });
 ```
 
-#### Message Constraints
-
-- Max length: 500 characters
-- No file attachments (for privacy)
-- Text-only messages
-- Real-time moderation ready
-
-#### Upcoming Features
-
-- 🚧 Message reactions/emoji
-- 🚧 Reply threads
-- 🚧 User mentions
-- 🚧 Media sharing (images, with auto-delete)
-
-### 4. Privacy & Data Management
-
-#### Message Retention Implementation
-
-- ✅ **Limited Message History**: Only last 2 hours visible
-- ✅ **Auto-Delete Messages**: 24-hour message retention
-- ✅ **Session Cleanup**: Hourly cron job removes expired sessions
-- ✅ **No Message Archives**: No long-term storage
-- ✅ **Minimal Metadata**: Only essential data stored
-
-#### Data Retention Policy
-
-```typescript
-// Message Lifecycle
-1. Message created → stored in database
-2. Visible for 2 hours → accessible via API
-3. After 24 hours → automatically deleted
-4. No backups → no recovery possible
-```
-
-#### Privacy Features
-
-- No IP address retention (beyond session creation)
-- No device fingerprinting
-- No cross-session tracking
-- No user profiles or history
-- No message search or indexing
-
-#### Upcoming Privacy Enhancements
-
-- 🚧 End-to-end encryption (optional)
-- 🚧 Self-destructing messages
-- 🚧 Venue-close message deletion
-- 🚧 GDPR compliance tools
-
-### 5. Mobile Application (React Native)
-
-#### Mobile App Features
-
-- ✅ **Cross-Platform**: iOS and Android support
-- ✅ **Expo Framework**: Easy development and deployment
-- ✅ **Native Navigation**: React Navigation
-- ✅ **Socket.IO Client**: Real-time messaging
-- ✅ **Shared Types**: Type safety with @charlando/shared
-
-#### Key Screens
-
-1. **Home Screen**: Welcome and session creation
-2. **Venue List**: Nearby venues with filters
-3. **Chat Screen**: Real-time venue chat
-4. **Profile**: Minimal session info
-
-#### Upcoming Web App Enhancements
-
-- 🚧 Push notifications
-- 🚧 Background location updates
-- 🚧 Offline mode
-- 🚧 Camera integration for QR codes
-- 🚧 Native geofencing
-
-### 6. Web Application (Next.js)
-
-#### Web App Implementation
-
-- ✅ **Next.js 14**: Modern React framework
-- ✅ **Server Components**: Optimal performance
-- ✅ **Tailwind CSS**: Responsive design
-- ✅ **Socket.IO Client**: Real-time features
-
-#### Use Cases
-
-- Desktop browsing
-- Mobile web fallback
-- Venue owner dashboards (planned)
-- Admin interface (planned)
-
-#### Upcoming Web App Features
-
-- 🚧 Progressive Web App (PWA)
-- 🚧 Venue management dashboard
-- 🚧 Analytics interface
-- 🚧 Marketing pages
-
-### 7. Backend Architecture (NestJS)
-
-#### Current Implementation
-
-- ✅ **Modular Design**: Separate modules for auth, venues, chat
-- ✅ **Dependency Injection**: Clean architecture
-- ✅ **Prisma ORM**: Type-safe database access
-- ✅ **WebSocket Integration**: Unified REST + WebSocket server
-- ✅ **JWT Authentication**: Stateless auth
-
-#### Module Structure
-
-```src/
-├── auth/          # Authentication & sessions
-├── venues/        # Location-based venues
-├── chat/          # Message handling
-├── sessions/      # Session lifecycle
-├── websocket/     # Real-time gateway
-└── common/        # Shared utilities
-```
-
-#### Planned Enhancements
-
-- 🚧 Rate limiting per user
-- 🚧 Redis caching
-- 🚧 Message queue (Bull)
-- 🚧 Microservices architecture
-
-### 8. Database Schema (PostgreSQL + Prisma)
-
-#### Core Models
-
-- **TempSession**: Ephemeral user sessions
-- **Lounge**: Venue/location data
-- **ChatMessage**: Chat messages (ephemeral)
-- **User**: Optional registered users (future)
-- **ModerationAction**: Content moderation logs
-
-#### Privacy Considerations
-
-- Minimal foreign keys
-- No user profiles
-- Automatic cascade deletes
-- Time-to-live (TTL) on records
-
-## Security Features
-
-### 1. Authentication & Authorization
-
-- JWT-based authentication
-- Short-lived tokens (15 minutes)
-- No refresh tokens (by design)
-- Session validation on every request
-
-### 2. Input Validation
-
-- Class-validator decorators
-- Max message length
-- Content sanitization
-- XSS prevention
-
-### 3. Rate Limiting
-
-- Per-IP rate limiting (planned)
-- Per-session rate limiting (planned)
-- WebSocket connection limits
-
-### 4. Data Protection
-
-- Encrypted database connections
-- HTTPS in production
-- Secure cookie settings
-- CORS configuration
-
-## Scalability Considerations
-
-### Current Architecture
-
-- Single NestJS server
-- PostgreSQL database
-- Socket.IO with memory adapter
-
-### Planned Improvements
-
-- 🚧 Redis for Socket.IO adapter (multi-server)
-- 🚧 Database read replicas
-- 🚧 CDN for static assets
-- 🚧 Load balancing
-- 🚧 Horizontal scaling
-
-## Example Use Cases
-
-### 1. Nightclub/Bar
-
-- Venue creates a temporary chatroom
-- Patrons join via location
-- Chat active only during operating hours
-- Messages deleted at closing time
-
-### 2. Music Festival
-
-- Multiple stage-specific chatrooms
-- Temporary festival duration
-- High concurrent users
-- Auto-delete after festival ends
-
-### 3. Convention/Conference
-
-- Event-specific chatrooms
-- Workshop/session discussions
-- Networking without contact sharing
-- Clean slate after event
-
-### 4. Pop-Up Events
-
-- Short-lived venues
-- Flash mob coordination
-- Temporary communities
-- No digital footprint
-
-## Future Vision
-
-### Phase 1 (Current)
-
-- ✅ Basic ephemeral messaging
-- ✅ Location-based venues
-- ✅ Mobile and web apps
-
-### Phase 2 (Next 3 months)
-
-- 🚧 Enhanced geolocation
-- 🚧 Push notifications
-- 🚧 Venue owner dashboards
-- 🚧 Advanced moderation
-
-### Phase 3 (6-12 months)
-
-- 🚧 End-to-end encryption
-- 🚧 Multi-language support
-- 🚧 Event integration
-- 🚧 Analytics platform
-
-### Phase 4 (Future)
-
-- 🚧 Monetization (venue features)
-- 🚧 API for third parties
-- 🚧 White-label solutions
-- 🚧 Global expansion
-
-## Technical Requirements
-
-### Development
-
-- Node.js 18+
-- PostgreSQL 14+
-- iOS Simulator / Android Studio
-- Modern web browser
-
-### Production
-
-- Cloud hosting (AWS/GCP/Azure)
-- Managed PostgreSQL
-- CDN for static assets
-- SSL certificates
-- Domain name
-
-### Optional Services
-
-- Redis for caching
-- Message queue (RabbitMQ/Bull)
-- Monitoring (Sentry, Datadog)
-- Analytics (Mixpanel, Amplitude)
-
-## Compliance & Legal
-
-### Privacy Compliance
-
-- GDPR-ready architecture
-- Minimal data collection
-- Right to deletion (automatic)
-- No cross-border data transfer
-
-### Content Moderation
-
-- User reporting system (planned)
-- Keyword filtering (planned)
-- Automated moderation (planned)
-- Human review process (planned)
-
-### Terms of Service
-
-- Age verification (18+)
-- Content guidelines
-- User conduct rules
-- Liability disclaimers
-
-## Conclusion
-
-Charlando En La Discoteca is positioned as a privacy-first alternative to permanent social platforms. By focusing on temporary, location-based messaging, it serves the unique needs of nightlife and event-goers while respecting their privacy and digital footprint concerns.
-
-The platform is designed to scale from small venues to large festivals while maintaining its core principle: temporary, anonymous, ephemeral communication.
+**Planned:** Message reactions, reply threads, media sharing (with auto-delete)
 
 ---
 
-**Last Updated**: January 2026  
-**Version**: 0.1.0 (Early Stage)
+### 4. Privacy & Data Management
+
+**Implementation:**
+- ✅ Messages visible for 2 hours via API, deleted after 24 hours
+- ✅ No message archives, search, or indexing
+- ✅ No IP retention beyond session creation
+- ✅ No device fingerprinting or cross-session tracking
+
+**See "Data Retention Policy" section above for detailed timelines.**
+
+**Planned:** End-to-end encryption, venue-close message deletion, GDPR tools
+
+---
+
+### 5. Mobile & Web Applications
+
+**Mobile (React Native + Expo):**
+- ✅ Cross-platform iOS/Android with native navigation
+- ✅ Socket.IO client for real-time features
+- ✅ Key screens: Home, Venue Discovery, Chat, Profile
+- 🚧 Planned: Push notifications, offline mode, geofencing
+
+**Web (Next.js 14):**
+- ✅ Server components, Tailwind CSS, responsive design
+- ✅ Use cases: Desktop browsing, mobile fallback, admin dashboards
+- 🚧 Planned: PWA support, venue management dashboard
+
+---
+
+### 6. Backend Architecture (NestJS)
+
+**Current Implementation:**
+- ✅ Modular design with dependency injection
+- ✅ Prisma ORM for type-safe database access
+- ✅ Unified REST + WebSocket server (single port)
+- ✅ JWT authentication with session validation
+
+**Module Structure:**
+```
+src/
+├── auth/          # Authentication & sessions
+├── venues/        # Location-based venues
+├── chat/          # Message handling
+├── sessions/      # Session lifecycle & cleanup
+├── websocket/     # Real-time gateway
+└── common/        # Shared utilities, guards, decorators
+```
+
+**Planned:** Rate limiting, Redis caching, message queue (Bull), microservices
+
+---
+
+## Security & Compliance
+
+### Security Features
+- **Authentication**: JWT with 15-minute token expiry, session validation
+- **Input Validation**: Class-validator decorators, XSS prevention, content sanitization
+- **Data Protection**: HTTPS, encrypted DB connections, secure cookies, CORS
+- **Rate Limiting**: Planned for per-IP and per-session limits
+
+### GDPR Compliance
+- **Minimal Data Collection**: No personal identifiable information required
+- **Right to Deletion**: Automatic (24-hour retention)
+- **Data Portability**: N/A (ephemeral data)
+- **No Cross-Border Transfer**: Regional deployment recommended
+
+### Content Moderation (Planned)
+- User reporting system
+- Keyword filtering
+- Automated moderation
+- Human review process for edge cases
+
+---
+
+## Scalability & Production
+
+### Current Architecture
+- Single NestJS server
+- PostgreSQL database
+- Socket.IO with in-memory adapter
+
+### Scaling Path
+1. **Phase 1 (0-1K users):** Single server deployment
+2. **Phase 2 (1K-10K users):** Add Redis for Socket.IO clustering
+3. **Phase 3 (10K+ users):** Horizontal scaling with load balancer, database read replicas
+
+**Planned Improvements:**
+- Redis for Socket.IO adapter (multi-server WebSocket)
+- Database read replicas for query distribution
+- CDN for static assets
+- Message queue (Bull/RabbitMQ) for background jobs
+
+---
+
+## Use Cases
+
+| Scenario | Implementation | Privacy Benefit |
+|----------|---------------|-----------------|
+| **Nightclub** | Venue-specific chatroom during operating hours | Messages deleted after venue closes |
+| **Festival** | Multi-stage chatrooms for 2-3 day event | All data purged 24h after festival ends |
+| **Convention** | Session-specific discussions | Network without sharing personal contacts |
+| **Pop-Up Event** | Short-lived temporary community | Zero digital footprint after event |
+
+---
+
+## Roadmap
+
+### Phase 1 - v0.1.0 (Current) ✅
+- Basic ephemeral messaging
+- Location-based venue discovery
+- Mobile and web apps
+- Auto-delete sessions and messages
+
+### Phase 2 - v0.2.0 (Next 3 months)
+- Push notifications
+- Enhanced geolocation with PostGIS
+- Venue owner dashboards
+- Advanced moderation tools
+
+### Phase 3 - v0.3.0 (6-12 months)
+- End-to-end encryption
+- Multi-language support
+- Event calendar integration
+- Analytics platform for venue owners
+
+### Phase 4 - v1.0.0 (Future)
+- Monetization (premium venue features)
+- Public API for third-party integrations
+- White-label solutions
+- Global scaling infrastructure
+
+---
+
+## Technical Stack Summary
+
+### Core Technologies
+- **Backend:** NestJS (TypeScript), Prisma ORM
+- **Database:** PostgreSQL 14+
+- **Mobile:** React Native, Expo (~50.0)
+- **Web:** Next.js 14, React 18
+- **Real-time:** Socket.IO
+- **Authentication:** JWT
+
+### Dependencies
+- **Required:** Node.js 18+, PostgreSQL 14+
+- **Optional:** Redis (caching), Bull (queues), Sentry (monitoring)
+- **Development:** TypeScript, ESLint, Prettier
+
+---
+
+## Conclusion
+
+Charlando En La Discoteca prioritizes user privacy through ephemeral-by-design architecture. Unlike traditional social platforms, the system actively deletes data rather than archiving it. This approach serves venues, festivals, and events where temporary, anonymous communication enhances the social experience without creating permanent digital records.
+
+---
+
+**Version:** 0.1.0 (Early Stage)  
+**Last Updated:** January 2026  
+**License:** MIT
